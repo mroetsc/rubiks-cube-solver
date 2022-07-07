@@ -620,14 +620,6 @@ class MainApplication():
                 if np.all(self.solution - self.c.sides ==  self.perfect): #checks wether or not we have a perfect solution -> improving steps needed to solve the cube
                     n_steps = i
                     print("Heuryka")
-                    msg = EmailMessage()
-                    msg.set_content(f"Vallah, BigBertha ist fucking smart! Unser bebe hat den Cube gelöst! (und Paul stinkt)\n Anzahl der Schritte:{n_steps}")
-                    msg["Subject"] = "Pardy hard mothafackASS!"
-                    msg["From"] = "Robin@BigBertha.de"
-                    msg["To"] = ("paul.kleineberg@gmx.de", "mattes.roetschke@web.de", "s.galaxy.a5.j@gmail.com")
-                    s = smtplib.SMTP("localhost")
-                    s.send_message(msg)
-                    s.quit()
                     break
                 
                 if i % 20 == 0:
