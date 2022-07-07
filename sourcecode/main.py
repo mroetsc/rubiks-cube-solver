@@ -10,10 +10,18 @@ if sys.argv[1] == "True":
 if sys.argv[1] == "False":
     cmd_only = False
 
+#only load the code for the roboter if we are on a pi
+if sys.argv[2] == "Windows":
+    Pi = False
+if sys.argv[2] == "Pi":
+    Pi = True
+    import solve
+
 import cube
 import neural_network
 import numpy as np
 import tkinter as tk
+from tkinter import messagebox
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import itertools
 import threading
@@ -22,6 +30,7 @@ import time
 import psutil
 import smtplib
 from email.message import EmailMessage
+
 
 
 class horizontal_Line(tk.Frame):
@@ -93,6 +102,7 @@ class GUI(tk.Frame):
         
         self.master = master
         self.master.state("zoomed")
+        self.master.attributes("-fullscreen", True)
         self.master.title("rubikscube solver")
         self.width = self.master.winfo_screenwidth()
         self.height = self.master.winfo_screenheight()
@@ -104,10 +114,11 @@ class GUI(tk.Frame):
         self.spacer_distance = int(self.height * 0.02)
         self.specs_width = int(self.width * 0.135)
         self.cube_width = int(self.width * 0.156)
-        self.sidepanel_height = int(self.height * 0.5)
-        self.bottompanel_height = self.sidepanel_height - self.spacer_distance * 2 - 10
-        self.save_width = int(self.width * 0.5 - 10)
+        self.sidepanel_height = int(self.height * 0.6)
+        self.bottompanel_height = self.height - (self.sidepanel_height + self.spacer_distance * 2 + 16)
+        self.create_width = int(self.width * 0.5 - 10)
         
+        self.saved = True
         self.sound_on = False
         self.open_save_pop_up = False        
 
@@ -122,11 +133,18 @@ class GUI(tk.Frame):
         ##############
         #pretty stuff no real use
         self.spacer_line = horizontal_Line(self, self.width - 20, (10,self.spacer_distance), self.accent_color)
-
         self.spacer_vertical_line = vertical_Line(self, 7, (10,self.spacer_distance - 3), self.accent_color)
-
         self.spacer_vertical_line2 = vertical_Line(self, 7, (self.specs_width + 9, self.spacer_distance - 3), self.accent_color)
+        
+        self.spacer_vertical_line3 = vertical_Line(self, 7, (self.width - self.cube_width - 10, self.spacer_distance - 3), self.accent_color)
+        self.spacer_vertical_line4 = vertical_Line(self, 7, (self.width - 10, self.spacer_distance - 3), self.accent_color)
         ##############
+
+        #adding close button to the GUI
+        self.close_f = container_Frame(self, 40, self.spacer_distance, (self.width - 50, 0), self.primary_color)
+        
+        self.close_b = tk.Button(self.close_f, command=self.close, text= "X", width= 3, bg= self.primary_color, fg= self.accent_color, relief= tk.FLAT, font= 12)
+        self.close_b.place(x=0, y=-5)
 
         ##############
         #specs section
@@ -139,15 +157,15 @@ class GUI(tk.Frame):
         self.texts = ("Name", "Inputnodes", "Hiddenlayers", "Hiddennodes", "Outputnodes", "Learning Rate", "Ram Usage", "CPU Usage")
         for i in range(8):
             #just some frames to make the whole look prettier
-            vertical_line1 = vertical_Line(self.specs_f, 7, (0, 65*i), self.accent_color)
-            vertical_line2 = vertical_Line(self.specs_f, 7, (self.specs_width-1, 65*i), self.accent_color)
-            horizontal_line = horizontal_Line(self.specs_f, self.specs_width, (0, 65*i + 3), self.accent_color)
+            vertical_line1 = vertical_Line(self.specs_f, 7, (0, 80*i), self.accent_color)
+            vertical_line2 = vertical_Line(self.specs_f, 7, (self.specs_width-1, 80*i), self.accent_color)
+            horizontal_line = horizontal_Line(self.specs_f, self.specs_width, (0, 80*i + 3), self.accent_color)
             self.pretty_frames.append((vertical_line1, vertical_line2, horizontal_line))
             
             #setting up string variables to change the text of the labels
             self.info_text.update({f"info{i}":tk.StringVar(value= "NONE")})
-            label = Label(self.specs_f, self.primary_color, self.accent_color, ("MICRAC",12), (5, 65*i + 15), text= self.texts[i])
-            label2 = Label(self.specs_f, self.primary_color, self.secondary_color, ("MICRAC",12), (5, 65*i + 40), textvariable= self.info_text[f"info{i}"])
+            label = Label(self.specs_f, self.primary_color, self.accent_color, ("MICRAC",12), (5, 80*i + 15), text= self.texts[i])
+            label2 = Label(self.specs_f, self.primary_color, self.secondary_color, ("MICRAC",12), (5, 80*i + 40), textvariable= self.info_text[f"info{i}"])
             self.info_labels.append((label,label2))
             
         self.specs_vertical_line1 = vertical_Line(self.specs_f, 7, (0, self.sidepanel_height - 7), self.accent_color)
@@ -184,11 +202,11 @@ class GUI(tk.Frame):
         self.canvas = FigureCanvasTkAgg(self.app.c.fig, self.canvas_f)
         self.canvas.get_tk_widget().place(x= 0, y= 0) #placing the figure
 
-        self.cube_vertical_line5 = vertical_Line(self.cube_header_f, 7, (0, 462), self.accent_color)
-        self.cube_vertical_line6 = vertical_Line(self.cube_header_f, 7, (self.cube_width - 1, 462), self.accent_color)
-        self.cube_horizontal_line3 = horizontal_Line(self.cube_header_f, self.cube_width, (0, 465), self.accent_color)
+        self.cube_vertical_line5 = vertical_Line(self.cube_header_f, 7, (0, self.sidepanel_height - 80), self.accent_color)
+        self.cube_vertical_line6 = vertical_Line(self.cube_header_f, 7, (self.cube_width - 1, self.sidepanel_height - 80), self.accent_color)
+        self.cube_horizontal_line3 = horizontal_Line(self.cube_header_f, self.cube_width, (0, self.sidepanel_height - 77), self.accent_color)
         
-        self.solve_r_b = tk.Button(self.cube_header_f, command= self.app.give_robot_solution, text= "hehe robot go \n brrrrr...", font=("MICRAC", 12), bg= self.primary_color, fg= self.secondary_color, width= 18, height= 2)
+        self.solve_r_b = tk.Button(self.cube_header_f, command= self.app.give_robot_solution, text= "Solve", font=("MICRAC", 12), bg= self.primary_color, fg= self.secondary_color, width= 18, height= 2)
         self.solve_r_b.place(x=11, y=self.sidepanel_height - 60)
         
         self.cube_vertical_line5 = vertical_Line(self.cube_header_f, 7, (0, self.sidepanel_height - 7), self.accent_color)
@@ -205,12 +223,12 @@ class GUI(tk.Frame):
         ##############
 
         ##############
-        #save/load section
-        self.save_f = container_Frame(self, self.save_width, self.bottompanel_height, (10, self.height - self.bottompanel_height), self.primary_color)
+        #create section
+        self.create_f = container_Frame(self, self.create_width * 0.55, self.bottompanel_height, (10, self.sidepanel_height + 2*self.spacer_distance + 16), self.primary_color)
 
-        self.save_vertical_line1 = vertical_Line(self.save_f, 7, (0, 0), self.accent_color)
-        self.save_vertical_line2 = vertical_Line(self.save_f, 7, (int(self.save_width *0.55), 0), self.accent_color)
-        self.save_horizontal_line1 = horizontal_Line(self.save_f, int(self.save_width *0.55), (0, 3), self.accent_color)
+        self.create_vertical_line1 = vertical_Line(self.create_f, 7, (0, 0), self.accent_color)
+        self.create_vertical_line2 = vertical_Line(self.create_f, 7, (int(self.create_width *0.55), 0), self.accent_color)
+        self.create_horizontal_line1 = horizontal_Line(self.create_f, int(self.create_width *0.55), (0, 3), self.accent_color)
 
         self.create_labels = []
         self.create_entrys = []
@@ -218,61 +236,75 @@ class GUI(tk.Frame):
         
         #self.texts = ("Name", "Inputnodes", "Hiddenlayers", "Hiddennodes", "Outputnodes", "Learning Rate")
         for i in range(6):
-            label = Label(self.save_f, self.primary_color, self.accent_color, ("MICRAC",12), (5, 35 * i + 20), text= self.texts[i])
+            label = Label(self.create_f, self.primary_color, self.accent_color, ("MICRAC",12), (5, 40 * i + 20), text= self.texts[i])
             self.create_labels.append(label)
             
             self.entry_text.update({f"entry{i}":tk.StringVar()})
-            entry = tk.Entry(self.save_f, textvariable= self.entry_text[f"entry{i}"], bg= self.primary_color, fg= self.accent_color, font= ("MICRAC",12), insertbackground= self.accent_color)
-            entry.place(x=200, y=35*i + 20)
+            entry = tk.Entry(self.create_f, textvariable= self.entry_text[f"entry{i}"], bg= self.primary_color, fg= self.accent_color, font= ("MICRAC",12), insertbackground= self.accent_color)
+            entry.place(x=200, y=40*i + 20)
             self.create_entrys.append(entry)
 
-        self.create_NN_b = tk.Button(self.save_f, command= self.create, text= "Create Neuralnetwork", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
-        self.create_NN_b.place(x=198, y=230)
+        self.create_NN_b = tk.Button(self.create_f, command= self.create, text= "Create Neuralnetwork", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
+        self.create_NN_b.place(x=198, y=250)
         
-        self.save_vertical_line3 = vertical_Line(self.save_f, 7, (0, 270), self.accent_color)
-        self.save_vertical_line4 = vertical_Line(self.save_f, 7, (int(self.save_width *0.55), 270), self.accent_color)
-        self.save_horizontal_line2 = horizontal_Line(self.save_f, int(self.save_width *0.55), (0, 273), self.accent_color)
-
+        self.create_vertical_line3 = vertical_Line(self.create_f, 7, (0, self.bottompanel_height - 15), self.accent_color)
+        self.create_vertical_line4 = vertical_Line(self.create_f, 7, (int(self.create_width * 0.55), self.bottompanel_height  - 15), self.accent_color)
+        self.create_horizontal_line2 = horizontal_Line(self.create_f, int(self.create_width * 0.55), (0, self.bottompanel_height  - 12), self.accent_color)
+        
         ###############
-        #area for the save button
-        self.save_f = container_Frame(self, int(self.width * 0.22), self.bottompanel_height, (self.width * 0.275 + 20, self.height - self.bottompanel_height), self.primary_color)
+        #area for the train buttons
+        self.train_f = container_Frame(self, int(self.width * 0.22), self.bottompanel_height, (self.width * 0.275 + 20, self.sidepanel_height + 2*self.spacer_distance + 16), self.primary_color)
         
-        self.save_vertical_line1 = vertical_Line(self.save_f, 7, (0, 0), self.accent_color)
-        self.save_vertical_line2 = vertical_Line(self.save_f, 7, (int(self.width * 0.22) - 1, 0), self.accent_color)
-        self.save_horizontal_line1 = horizontal_Line(self.save_f, int(self.width * 0.22), (0, 3), self.accent_color)
+        self.train_vertical_line1 = vertical_Line(self.train_f, 7, (0, 0), self.accent_color)
+        self.train_vertical_line2 = vertical_Line(self.train_f, 7, (int(self.width * 0.22) - 1, 0), self.accent_color)
+        self.train_horizontal_line1 = horizontal_Line(self.train_f, int(self.width * 0.22), (0, 3), self.accent_color)
         
-        self.save_NN_b = tk.Button(self.save_f, command= self.save, text= "save", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
-        self.save_NN_b.place(x=10, y=15)
-        
-        self.save_as_NN_b = tk.Button(self.save_f, command= self.save_as, text= "save as...", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
-        self.save_as_NN_b.place(x=10, y=50)
+        self.train_b = tk.Button(self.train_f, command= self.activate_training, text= "start/stop training", bg= self.primary_color, fg= self.accent_color, font=("MICRAC",12))
+        self.train_b.place(x=10, y=15)
 
-        self.sound_b = tk.Button(self.save_f, command= self.turn_sound_on, text= "turn on notifications(Bugged)", bg= self.primary_color, fg= self.accent_color, font=("MICRAC",12))
-        self.sound_b.place(x=10, y=85)
+        self.loops_txt = tk.StringVar(value= "Loops: 0")
+        self.loops_l = tk.Label(self.train_f, textvariable= self.loops_txt, bg= self.primary_color, fg= self.accent_color, font=("MICRAC",12))
+        self.loops_l.place(x=10, y=55)
         
-        self.save_vertical_line3 = vertical_Line(self.save_f, 7, (0, self.bottompanel_height - 70 - self.spacer_distance), self.accent_color)
-        self.save_vertical_line4 = vertical_Line(self.save_f, 7, (int(self.width * 0.22)-1, self.bottompanel_height - 70 - self.spacer_distance), self.accent_color)
-        self.save_horizontal_line2 = horizontal_Line(self.save_f, int(self.width * 0.22), (0, self.bottompanel_height - 67 - self.spacer_distance), self.accent_color)
+        self.sound_b = tk.Button(self.train_f, command= self.turn_sound_on, text= "turn on notifications(Bugged)", bg= self.primary_color, fg= self.accent_color, font=("MICRAC",12))
+        self.sound_b.place(x=10, y=95)
         
-        ### they are not placed
-        self.load_b = tk.Button(self.save_f, command= self.load, text= "load weights")
-        self.load_b.place(x=5, y=400)
-
-        self.train_b = tk.Button(self.save_f, command= self.activate_training, text= "start/stop training")
-        self.train_b.place(x=120, y=400)
-
-        self.loops_txt = tk.StringVar()
-        self.loops_txt.set("Loops: 0")
-        self.loops_l = tk.Label(self.save_f, textvariable= self.loops_txt)
-        self.loops_l.place(x=240, y=400)
+        self.save_NN_b = tk.Button(self.train_f, command= self.save, text= "save", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
+        self.save_NN_b.place(x=10, y=135)
+        
+        self.save_as_NN_b = tk.Button(self.train_f, command= self.save_as, text= "save as...", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
+        self.save_as_NN_b.place(x=10, y=175)
+        
+        self.load_b = tk.Button(self.train_f, command= self.load, text= "load weights", font= ("MICRAC",12), bg= self.primary_color, fg= self.accent_color)
+        self.load_b.place(x=10, y=215)
+        
+        self.train_vertical_line3 = vertical_Line(self.train_f, 7, (0, self.bottompanel_height - 15), self.accent_color)
+        self.train_vertical_line4 = vertical_Line(self.train_f, 7, (int(self.width * 0.22) - 1, self.bottompanel_height - 15), self.accent_color)
+        self.train_horizontal_line2 = horizontal_Line(self.train_f, int(self.width * 0.22), (0, self.bottompanel_height - 12), self.accent_color)
         
         ###############
         #Terminal action
-        self.terminal_f = container_Frame(self, int(self.width * 0.49) - 10, self.bottompanel_height, (self.width * 0.495 + 30, self.height - self.bottompanel_height), self.primary_color)
+        self.terminal_f = container_Frame(self, int(self.width * 0.49) - 10, self.bottompanel_height + 5, (self.width * 0.495 + 30, self.sidepanel_height + 2*self.spacer_distance + 1), self.primary_color)
         
-        self.terminal_SV = tk.StringVar(value= f"{self.app.path}>")
-        self.terminal = tk.Label(self.terminal_f, textvariable= self.terminal_SV, font= ("Terminal",11), bg= self.primary_color, fg= self.accent_color, width= 200, justify= tk.LEFT, anchor= "w")
+        self.terminal = tk.Text(self.terminal_f, font= ("Terminal",11), bg= self.primary_color, fg= self.accent_color, wrap= tk.NONE, width= 185, height= 30)
+        self.terminal_scrollbar = tk.Scrollbar(self.terminal_f, command= self.terminal.yview, bg= self.accent_color)
+        self.terminal.config(yscrollcommand= self.terminal_scrollbar.set)
+        
         self.terminal.place(x=0, y=15)
+        self.terminal_scrollbar.place(x= self.width + 100, y=self.height + 100) #placing scrollbar out of bounds so user can only scroll 
+    
+    #close function    
+    def close(self):
+        if not self.saved:
+            close = messagebox.askyesno("", "You havent saved yet! Do you really want close the Rubikscubesolver?") #asking the user a question returned value gets stored in close
+        else:
+            close = True #if the user has saved just close the app
+        
+        #closing the app     
+        if close:
+            self.master.destroy()
+        else: #otherwise just returns from the function
+            return
     
     #Function to activate the 3D cube
     def activate_3D(self):
@@ -284,9 +316,9 @@ class GUI(tk.Frame):
             self.app.shown = False
     
     def create(self):
-        self.terminal_SV.set(f"{self.terminal_SV.get()}create\n{self.app.path}>")
+        self.terminal.insert(tk.END, f"{self.app.path}>create\n")
         if self.app.c_thread.is_alive(): #doesnt start a new thread when its already running
-            self.terminal_SV.set(f"{self.terminal_SV.get()}thread already started\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>thread already started\n")
             return
         name = self.entry_text["entry0"].get()
         n_input_nodes = self.entry_text["entry1"].get()
@@ -297,7 +329,7 @@ class GUI(tk.Frame):
         
         #only creates a new network when there is a value in each box
         if name == "" or n_input_nodes == "" or n_hidden_layers == "" or n_hidden_nodes == "" or n_output_nodes == "" or l_rate == "":
-            self.terminal_SV.set(f"{self.terminal_SV.get()}all entrys have to be filled\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>all entrys have to be filled\n")
             return
         self.app.c_thread = threading.Thread(target= self.app.create, args= (name, int(n_input_nodes), int(n_hidden_layers), int(n_hidden_nodes), int(n_output_nodes), float(l_rate)))
         self.app.c_thread.start() #starting the creating thread
@@ -315,31 +347,32 @@ class GUI(tk.Frame):
         self.entry_text["entry3"].set("")
         self.entry_text["entry4"].set("")
         self.entry_text["entry5"].set("")
-        self.terminal_SV.set(f"{self.terminal_SV.get()}creating a new Neural Network...\n{self.app.path}>")
+        self.terminal.insert(tk.END, f"{self.app.path}>creating a new Neural Network...\n")
         
     #putting save into another thread so the window doesnt lag out when saving
     def save(self):
-        self.terminal_SV.set(f"{self.terminal_SV.get()}save\n {self.app.path}>")
+        self.terminal.insert(tk.END, f"{self.app.path}>save\n")
         if not self.app.s_thread.is_alive():
             try:
                 self.app.s_thread = threading.Thread(target= self.app.save, args= (self.info_text["info0"].get(), self.app.NN.whlayers))
             except AttributeError:
-                self.terminal_SV.set(f"{self.terminal_SV.get()}Neural Network hasnt been initialized yet.\n{self.app.path}>")
+                self.terminal.insert(tk.END, f"{self.app.path}>Neural Network hasnt been initialized yet\n")
                 return
-            self.terminal_SV.set(f"{self.terminal_SV.get()}saving...\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>saving...\n")
             self.app.s_thread.start()
+            self.saved = True
         else:
-            self.terminal_SV.set(f"{self.terminal_SV.get()}already saving\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>already saving\n")
 
     #puttin save_as into another thread so the window doesnt lag out when saving
     def _save_as(self, name : str, win): 
-        self.terminal_SV.set(f"{self.terminal_SV.get()}save as\n{self.app.path}>")        
+        self.terminal.insert(tk.END, f"{self.app.path}>save as\n")      
         if not self.app.s_a_thread.is_alive():
-            self.terminal_SV.set(f"{self.terminal_SV.get()}saving...\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>saving...\n")
             self.app.s_a_thread = threading.Thread(target= self.app.save_as, args= (name, win))
             self.app.s_a_thread.start()
         else:
-            self.terminal_SV.set(f"{self.terminal_SV.get()}already saving\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>already saving\n")
 
     #saving function for new neural networks    
     def save_as(self):
@@ -375,6 +408,7 @@ class GUI(tk.Frame):
     def change_system_utilization(self):
         self.info_text["info6"].set(str(psutil.virtual_memory()[2]))
         self.info_text["info7"].set(str(psutil.cpu_percent()))
+        
         self.after(500, self.change_system_utilization)
     
     #turning on sound to get notified if error has been printed
@@ -385,10 +419,10 @@ class GUI(tk.Frame):
             self.sound_on = False
             
     def load(self):
-        self.terminal_SV.set(f"{self.terminal_SV.get()}load\n{self.app.path}>")
+        self.terminal.insert(tk.END, f"{self.app.path}>load\n")
         if not self.app.l_thread.is_alive():
-            directory = tk.filedialog.askdirectory(initialdir = f"{self.app.path}saves", title = "select directory") #asking the user for the path to the file
-            self.terminal_SV.set(f"{self.terminal_SV.get()}loading weights...\n{self.app.path}>")
+            directory = tk.filedialog.askdirectory(initialdir = f"{self.app.path}saves", title = "select directory\n") #asking the user for the path to the file
+            self.terminal.insert(tk.END, f"{self.app.path}>loading weights...\n")
             loaded_specs = np.loadtxt(f"{directory}/specs") #gotta get these to update the info about the network
             self.app.l_thread = threading.Thread(target= self.app.load, args=(directory, loaded_specs))
             self.info_text["info0"].set(f"{os.path.basename(directory)}")
@@ -399,32 +433,30 @@ class GUI(tk.Frame):
             self.info_text["info5"].set(f"{loaded_specs[4]}")  
             self.app.l_thread.start()
         else:
-            self.terminal_SV.set(f"{self.terminal_SV.get()}already loading\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>already loading\n")
             
     #train the NN 
     training = False
     def activate_training(self):
-        if not self.app.training:
-            self.terminal_SV.set(f"{self.terminal_SV.get()}train\n{self.app.path}>")       
-        if self.app.training:
-            self.terminal_SV.set(f"{self.terminal_SV.get()}stop_training\n{self.app.path}>")  
         try:
             self.app.NN.whlayers
         except AttributeError:
-            self.terminal_SV.set(f"{self.terminal_SV.get()}Neural Network not initialized yet. Either create or load one\n{self.app.path}>")
+            self.terminal.insert(tk.END, f"{self.app.path}>Neural Network not initialized yet. Either create or load one\n")
             return
         
         if not self.app.training: #when we want to start, training = False
             self.app.training = True 
             if not self.app.t_thread.is_alive():
+                self.saved = False
+                self.terminal.insert(tk.END, f"{self.app.path}>train\n")  
                 self.app.t_thread = threading.Thread(target= self.app.train)
                 self.app.t_thread.start()
-                self.terminal_SV.set(f"{self.terminal_SV.get()}started training\n{self.app.path}>")
+                self.terminal.insert(tk.END, f"{self.app.path}>started training\n")
             else:
-                self.terminal_SV.set(f"{self.terminal_SV.get()}already training...\n{self.app.path}>")
+                self.terminal.insert(tk.END, f"{self.app.path}>already training...\n")
         elif self.app.training:
-            self.app.training = False
-            
+            self.terminal.insert(tk.END, f"{self.app.path}>stop_training\n")
+            self.app.training = False            
         
     #pass
     def _pass():
@@ -446,12 +478,19 @@ class MainApplication():
     perfect = np.array([np.tile(0, (3, 3)) for i in range(6)])
     
     def __init__(self):
+        #creates the robots app only if the platform is Pi
+        if Pi:
+            self.robot = solve.app()
+            
+        #setting up the cube, working directory, NN
         self.c = cube.rubiks_cube()
         self.open_directory = ""
+        #transforming path
         self.path = os.path.realpath(__file__)
         self.path = self.path.replace("main.py", "")
         self.path = self.path.replace("\\", "/")
         self.NN = neural_network.NeuralNetwork()
+        #creating threads
         self.t_thread = threading.Thread(target= self.train)
         self.c_thread = threading.Thread(target= self.create_cmd_only)
         self.s_thread = threading.Thread(target= self.save)
@@ -471,12 +510,11 @@ class MainApplication():
             move = self.NN.querry(self.converter(self.c.sides))
             self.turn(move)
             o_lst.append(list(move).index(max(move)))
-            
-        print(o_lst)
-            
-        with open("moves", "w") as f:
-            f.write(str(o_lst))
-            print("set up file")
+        if Pi:    
+            self.robot.solve_cube(o_lst) #solving the cube
+        else:
+            print(o_lst)
+        
 
     #meh
     def converter(self, arr):
@@ -485,9 +523,12 @@ class MainApplication():
         return list(arr)
     
     def create_cmd_only(self, specs):
+        #transforming the input
         specs = specs.replace(" ", "")
+        #splitting it to be read in
         specs = specs.split(",")
         
+        #creating the NN
         self.create(specs[0], int(specs[1]), int(specs[2]), int(specs[3]), int(specs[4]), float(specs[5]))
     
     #creates a new neural network
@@ -520,7 +561,11 @@ class MainApplication():
             np.save(f"{self.path}saves/{name}/weights", weights) #creating binary file of weights
             np.savetxt(f"{self.path}saves/{name}/specs", np.array([self.NN.n_inodes, self.NN.n_h_layers, self.NN.n_hnodes, self.NN.n_onodes, self.NN.l_rate])) #saving the specs of the Network for easy loading
         except AttributeError:
+            if not cmd_only:
+                GUI.terminal.insert(tk.END, f"{self.path}> saving failed")
             return False
+        if not cmd_only:
+            GUI.terminal.insert(tk.END, f"{self.path}> finished saving")
         return True
     
     def load_cmd_only(self, name):        
@@ -533,11 +578,17 @@ class MainApplication():
             #getting the directory of the Neural Network
             loaded_weights = np.load(f"{name}/weights.npy", allow_pickle= True)              
             self.NN.load(specs, loaded_weights) #loading the Neural Network
-            print("loading finished...")
+            if not cmd_only:
+                GUI.terminal.insert(tk.END, f"{self.path}> loading finished")
+            else:
+                print("loading finished")
             self.open_directory = name #open directory has changed
             self.name = os.path.basename(name)
         except FileNotFoundError:
-            print("File not found")
+            if not cmd_only:
+                GUI.terminal.insert(tk.END, f"{self.path}> File not found")
+            else:
+                print("File not found")
             return
 
     #true training function
@@ -562,8 +613,6 @@ class MainApplication():
                 output = self.NN.train(self.converter(self.c.sides))
                 saves.append(output)
                 self.turn(output[-1]) #giving the turn function the last output
-                #saves.append(self.NN.train(self.converter(self.c.sides))) #appends saves for later
-                #self.turn(saves[i][len(saves[i])-1]) #turning the cube
 
                 #if the cube is visualized we update the sides accordingly
                 if self.shown:
@@ -650,35 +699,35 @@ class MainApplication():
                 weighted_weights = self.NN.whlayers[-i].T / np.sum(self.NN.whlayers[-i],axis = 1)
                 error = np.dot(weighted_weights,error)
 
-                #debugging
-                if self.b % 10 == 0:#int(40000/(self.NN.n_h_layers + self.NN.n_hnodes)) == 0:
+            #debugging
+            if self.b % int(40000/(self.NN.n_h_layers + self.NN.n_hnodes)) == 0:
+                
+                self.save(self.name, self.NN.whlayers)
+
+                if cmd_only: #if the programm is in cmd only mode the name of the dict will be name which the user inputed
+                    logging.basicConfig(filename=f'{self.name}_neuralnetwork.log',
+                                        format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+                                        datefmt='%H:%M:%S',
+                                        level=logging.DEBUG, 
+                                        filemode= "a")
+                    logging.debug(self.b)
+                    logging.debug(e)
+                    logging.debug(E)
+                else:
+                    GUI.terminal.insert(tk.END, f"{e}\n{self.path}>{E}\n{self.path}>")
+
+            if not self.training: #ending the loop
+                if cmd_only:
+                    print("finished training")
+                    print(f"trained for {self.b} loops")
+                    print(f"trained for: {(time.time()-start)/60} mins")
+                self.c.reset()
+                self.save(self.name, self.NN.whlayers)
+                if not cmd_only:
+                    GUI.canvas.draw()
+                    GUI.terminal.insert(tk.END, f"finished training\n{self.path}>trained for {self.b} loops\n{self.path}>\n{self.path}>trained for: {(time.time()-start)/60} mins\n")
                     
-                    self.save(self.name, self.NN.whlayers)
-
-                    if cmd_only: #if the programm is in cmd only mode the name of the dict will be name which the user inputed
-                        logging.basicConfig(filename=f'{self.name}_neuralnetwork.log',
-                                            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-                                            datefmt='%H:%M:%S',
-                                            level=logging.DEBUG, 
-                                            filemode= "a")
-                        logging.debug(self.b)
-                        logging.debug(e)
-                        logging.debug(E)
-                    else:
-                        GUI.terminal_SV.set(f"{GUI.terminal_SV.get()}{e}\n{self.path}>{E}\n{self.path}>")
-
-                if not self.training: #ending the loop
-                    if cmd_only:
-                        print("finished training")
-                        print(f"trained for {self.b} loops")
-                        print(f"trained for: {(time.time()-start)/60} mins")
-                    self.c.reset()
-                    self.save(self.name, self.NN.whlayers)
-                    if not cmd_only:
-                        GUI.canvas.draw()
-                        GUI.terminal_SV.set(f"{GUI.terminal_SV.get()}finished training\n{self.path}>trained for {self.b} loops\n{self.path}>\n{self.path}>trained for: {(time.time()-start)/60} mins")
-                        
-                    break
+                break
 
     #used to turn the cube with the train method
     def turn(self, pred):
