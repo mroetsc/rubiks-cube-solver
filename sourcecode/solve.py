@@ -1,3 +1,7 @@
+"""
+Copyright 2022, Paul Kleineberg, Julian Schaeffer and Mattes Roetschke, All rights reserved. This code is for illustrative use only. 
+"""
+
 import time 
 import RPi.GPIO as gpio
 
