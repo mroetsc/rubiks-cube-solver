@@ -1,5 +1,5 @@
 """
-Copyright 2022, Paul Kleineberg, All rights reserved. This code is for illustrative use only. 
+Copyright 2022, Paul Kleineberg, Julian Schaeffer and Mattes Roetschke, All rights reserved. This code is for illustrative use only. 
 """
 
 from random import choice
