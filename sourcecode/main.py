@@ -628,7 +628,7 @@ class MainApplication():
                     E = np.zeros(shape=(len(self.c.sides),1)) #error for each individual side
                     for i in range(len(self.c.sides)):
                         E[i] = np.sum(e[i])
-                    E = E/8
+                    E /= 8
                         
                     error = np.zeros(shape=(len(self.c.sides)*2,1)) #creating an empty array for the error to be stored in
                     error[0] = E[0]
@@ -662,7 +662,7 @@ class MainApplication():
             E = np.zeros(shape=(len(self.c.sides),1)) #error for each individual side
             for i in range(len(self.c.sides)):
                 E[i] = np.sum(e[i])
-            E = E/8
+            E /= 8
                 
             error = np.zeros(shape=(len(self.c.sides)*2,1)) #creating an empty array for the error to be stored in
             error[0] = E[0]
