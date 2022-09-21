@@ -1,1 +1,4 @@
-CAD files will be uploaded, once the design is complete and proven to be working.
+CAD files for 3D-printing.   
+Details can be found in print_list   
+
+Further descriptions will be added!
