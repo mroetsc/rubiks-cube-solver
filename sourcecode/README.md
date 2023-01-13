@@ -1,4 +1,4 @@
-To execute main.py which takes two input parameter: True/False and Desktop/Pi <br/>
+To execute main.py you have to specify one parameter: the trainingsmode (onec/20/judge_5) <br/>
 1st parameter is wether to turn on cmd only mode or GUI mode  
 2nd parameter is which platform you are using with Pi just enabeling solve.py  
 For example: "python main.py False Desktop" to start in GUI mode on Desktop   
