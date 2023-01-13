@@ -1,11 +1,8 @@
-"""
-Copyright 2022, Paul Kleineberg, Julian Schaeffer and Mattes Roetschke, All rights reserved. This code is for illustrative use only. 
-"""
-
 from random import choice
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 
 class rubiks_cube():
     color_dic = {
@@ -17,7 +14,7 @@ class rubiks_cube():
     "5": [0,1,0,1]
             }
     
-    fig = plt.Figure(figsize=(3,3),dpi=100,facecolor= "black")
+    fig = plt.Figure(figsize=(5,5),dpi=100,facecolor= "black")
     ax = fig.add_subplot(1,1,1,projection="3d")
     ax.autoscale(enable= False, axis= "both")
     ax.set_xbound(-3, +3)
@@ -30,15 +27,25 @@ class rubiks_cube():
     
     save = []
     
-    def __init__(self):
+    def __init__(self, ki = True):
         #the sides of the cube get stored here
         #self.sides = np.array([([np.array([1,2,3]),np.array([4,i,6]),np.array([7,8,9])]) for i in range(6)])
         #self.sides = np.array([np.array([np.array([1,2,3]),np.array([4,5,6]),np.array([7,8,9])]),np.array([np.array([10,11,12]),np.array([13,14,15]),np.array([16,17,18])]),np.array([np.array([19,20,21]),np.array([22,23,24]),np.array([25,26,27])]),np.array([np.array([28,29,30]),np.array([31,32,33]),np.array([34,35,36])]),np.array([np.array([37,38,39]),np.array([40,41,42]),np.array([43,44,45])]),np.array([np.array([46,47,48]),np.array([49,50,51]),np.array([52,53,54])])])
-        self.sides = np.array([np.tile(i/6+0.01, (3, 3)) for i in range(6)])
+        if ki:
+            self.sides = np.array([np.tile(i/5+0.01, (3, 3)) if i != 5 else np.tile(1, (3, 3)) for i in range(6)])
+        else:
+            self.sides = np.array([np.tile(i, (3, 3)) for i in range(6)])
+        self.ki = ki
+        self.shown = False
+        self.canvas = None
         self.side_dic = {}
         self.render()
+    
+    def load(self, val, pos : tuple):
+        self.sides[pos] = val
         
-    def rotate(self, side ,direction):
+    def rotate(self, side, direction):
+        #print("rotated: ", side, direction)
         #rotates ndarray(side) by the direction given 1=counterclockwise, -1=clockwise
         self.sides[side] = np.rot90(self.sides[side], k=direction)
         #bad solutions dont like it but easiest
@@ -186,14 +193,20 @@ class rubiks_cube():
         del top
         del left
         del bottom    
+
+        if self.shown:
+            time.sleep(0.01)
+            self.update()
+            self.canvas.draw()
             
-    def mix(self, *args):
+    def mix(self):
         #the name speaks for it self right?
-        for i in range(np.random.randint(70,100)):
-            self.rotate(np.random.randint(0,6),choice([-1,1]))
-            if args[0]:
-                self.update()
-                args[1].draw()
+        moves = []
+        for i in range(np.random.randint(20,40)):
+            side = np.random.randint(0,6)
+            dir = choice([-1,1])
+            self.rotate(side, dir)
+            moves.append((side, dir))
             
     def render(self):
         #front(red) with b 0-8
@@ -203,7 +216,10 @@ class rubiks_cube():
                 B = (1.5,-0.5+i,0.5-j)
                 C = (1.5,-0.5+i,1.5-j)
                 D = (1.5,-1.5+i,1.5-j)
-                poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[0][j][i]*6-0.06))])
+                if self.ki:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[0][j][i]*6-0.06))])
+                else:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[0][j][i]))])
                 poly.set_edgecolor("white")
                 self.side_dic.update({f"poly_{0}_{j}_{i}":poly})
                 self.ax.add_collection3d(poly)
@@ -215,7 +231,10 @@ class rubiks_cube():
                 B = (-0.5+j,-0.5+i,1.5)
                 C = (-1.5+j,-0.5+i,1.5)
                 D = (-1.5+j,-1.5+i,1.5)
-                poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[1][j][i]*6-0.06))])
+                if self.ki:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[1][j][i]*6-0.06))])
+                else:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[1][j][i]))])
                 poly.set_edgecolor("white")
                 self.side_dic.update({f"poly_{1}_{j}_{i}":poly})
                 self.ax.add_collection3d(poly)
@@ -227,7 +246,10 @@ class rubiks_cube():
                 B = (-0.5+i,-1.5,0.5-j)
                 C = (-0.5+i,-1.5,1.5-j)
                 D = (-1.5+i,-1.5,1.5-j)
-                poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[2][j][i]*6-0.06))])
+                if self.ki:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[2][j][i]*6-0.06))])
+                else:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[2][j][i]))])
                 poly.set_edgecolor("white")
                 self.side_dic.update({f"poly_{2}_{j}_{i}":poly})
                 self.ax.add_collection3d(poly)
@@ -239,7 +261,10 @@ class rubiks_cube():
                 B = (-1.5,0.5-i,0.5-j)
                 C = (-1.5,0.5-i,1.5-j)
                 D = (-1.5,1.5-i,1.5-j)
-                poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[3][j][i]*6-0.06))])
+                if self.ki:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[3][j][i]*6-0.06))])
+                else:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[3][j][i]))])
                 poly.set_edgecolor("white")
                 self.side_dic.update({f"poly_{3}_{j}_{i}":poly})
                 self.ax.add_collection3d(poly)
@@ -251,7 +276,10 @@ class rubiks_cube():
                 B = (0.5-i,1.5,0.5-j)
                 C = (0.5-i,1.5,1.5-j)
                 D = (1.5-i,1.5,1.5-j)
-                poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[4][j][i]*6-0.06))])
+                if self.ki:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[4][j][i]*6-0.06))])
+                else:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[4][j][i]))])
                 poly.set_edgecolor("white")
                 self.side_dic.update({f"poly_{4}_{j}_{i}":poly})
                 self.ax.add_collection3d(poly)
@@ -263,7 +291,10 @@ class rubiks_cube():
                 B = (-0.5+j,0.5-i,-1.5)
                 C = (-1.5+j,0.5-i,-1.5)
                 D = (-1.5+j,1.5-i,-1.5)
-                poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[5][j][i]*6-0.06))])
+                if self.ki:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[5][j][i]*6-0.06))])
+                else:
+                    poly = Poly3DCollection([[A,B,C,D]], color=self.color_dic[str(int(self.sides[5][j][i]))])
                 poly.set_edgecolor("white")
                 self.side_dic.update({f"poly_{5}_{j}_{i}":poly})
                 self.ax.add_collection3d(poly)
@@ -274,7 +305,10 @@ class rubiks_cube():
         for l in range(6):
             for j in range(3):
                 for i in range(3):
-                    self.side_dic[f"poly_{l}_{j}_{i}"].set_color(self.color_dic[str(int(self.sides[l][j][i]*6-0.06))])
+                    if self.ki:
+                        self.side_dic[f"poly_{l}_{j}_{i}"].set_color(self.color_dic[str(int(self.sides[l][j][i]*6-0.06))])
+                    else:
+                        self.side_dic[f"poly_{l}_{j}_{i}"].set_color(self.color_dic[str(int(self.sides[l][j][i]))])
                     self.side_dic[f"poly_{l}_{j}_{i}"].set_edgecolor("white")
     
     def reset(self):
@@ -282,4 +316,8 @@ class rubiks_cube():
         self.update()
     
 if __name__ == "__main__":
-    pass
+    c = rubiks_cube(False)
+    print(c.sides)
+    print("\n")
+    c.rotate(0,1)
+    print(c.sides)

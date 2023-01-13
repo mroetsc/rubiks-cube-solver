@@ -1,5 +1,27 @@
 """
-Copyright 2022, Paul Kleineberg, Julian Schaeffer and Mattes Roetschke, All rights reserved. This code is for illustrative use only. 
+MIT License
+
+Copyright (c) 2022 Paul Kleineberg
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Code inspiried by Tariq Rashid from the book "Make Your Own Neural Network" (2016)
 """
 
 import numpy as np
@@ -10,7 +32,7 @@ class NeuralNetwork():
         #sigmoid function; expit is the logistic sigmoid for ndarrays from scipy.special
         self.activation_func = lambda x: expit(x)
     
-    def create(self, n_input_nodes : int, n_hidden_layers : int, n_hidden_nodes : int, n_output_nodes : int, l_rate : float):
+    def create(self, n_input_nodes : int, n_hidden_layers : int, n_hidden_nodes : int, n_output_nodes : int, l_rate : float):        
         #store amount of the nodes so we dont forget later
         self.n_inodes = n_input_nodes
         self.n_hnodes = n_hidden_nodes
@@ -19,6 +41,8 @@ class NeuralNetwork():
         
         #learning rate
         self.l_rate = l_rate
+        
+        self.steps = 100
         
         #container for the weights
         self.whlayers = []
@@ -33,7 +57,7 @@ class NeuralNetwork():
         #weights between last hiddenlayer and output layer
         self.whlayers.append(np.random.normal(0.0, n_output_nodes ** -0.5, (n_output_nodes, n_hidden_nodes)))
 
-    def load(self, specs: list, weights):
+    def load(self, specs: list, weights : np.array):
         #store amount of the nodes so we dont forget later
         self.n_inodes = int(specs[0])
         self.n_h_layers = int(specs[1])
@@ -42,6 +66,8 @@ class NeuralNetwork():
         
         #learning rate
         self.l_rate = float(specs[4])
+        
+        self.steps = int(specs[5])
         
         #container for the weights
         self.whlayers = weights
@@ -98,3 +124,4 @@ class NeuralNetwork():
 
 if __name__ == "__main__":
     pass
+    

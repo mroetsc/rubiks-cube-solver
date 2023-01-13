@@ -1,5 +1,25 @@
 """
-Copyright 2022, Paul Kleineberg, Julian Schaeffer and Mattes Roetschke, All rights reserved. This code is for illustrative use only. 
+MIT License
+
+Copyright (c) 2022 Paul Kleineberg and Mattes Rötschke
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 """
 
 import time 
@@ -11,7 +31,7 @@ gpio.setwarnings(False)
 
 class App():
     def __init__(self):        
-        #define direction pins for A4988
+        #place direction pins here
         self.direc = { 
                 "0" : 0,
                 "1" : 0,
@@ -21,7 +41,7 @@ class App():
                 "5" : 0,
             		} 
         
-        #define step pins for A4988
+        #place step pins here
         self.step = {
             	"0" : 0,
                 "1" : 0,
@@ -30,7 +50,7 @@ class App():
                 "4" : 0,
                 "5" : 0,
                 	} 
-        #define disable pins for A4988
+        #tf is this?
         self.disable = {
                 "0" : 0,
                 "1" : 0,
@@ -40,38 +60,35 @@ class App():
                 "5" : 0,
                     }
         
-        #set the pins operation mode to output
+        #setting up the pins
         gpio.setup(list(self.direc.values()) + list(self.step.values()) + list(self.disable.values()), gpio.OUT)
         
-        #define a delay in between steps
+        #delay so the cube doesnt break
         self.delay = 0.0025
     
     #turning the cube right    
     def turn_right(self, side):
-        #enable the driver board and define direction
         gpio.output(self.disable[str(side)], False)
         gpio.output(self.direc[str(side)], False)
         
-        #do 100 steps, since 1 step equals 0.9°
         for i in range(100):
             gpio.output(self.step[str(side)], True)
             gpio.output(self.step[str(side)], False)
-            time.sleep(self.delay)
-        #disable the driver board again    
+            time.sleep(self.delay) #doesnt this have to be between the things above?
+            
         gpio.output(self.disable[str(side)], True)
     
     #function for turning left    
     def turn_left(self, side):
-        #enable the driver board and define direction
-        gpio.output(self.disable[str(side)], False)        
+        gpio.output(self.disable[str(side)], False)
+        
         gpio.output(self.direc[str(side)], True)
-
-        #do 100 steps, since 1 step equals 0.9°
+        
         for i in range(100):
             gpio.output(self.step[str(side)], True)
             gpio.output(self.step[str(side)], False)
             time.sleep(self.delay)
-        #disable the driver board again    
+            
         gpio.output(self.disable[str(side)], True)
     
     #loops through the moves supplied by the NN and turns the cube accordingly    
@@ -101,8 +118,7 @@ class App():
                 self.turn_left(5)
             elif i == 11:
                 self.turn_right(5)
-
-#execute main function                
+                
 if __name__ == "__main__":
     app = App()
     app.solve_cube()
