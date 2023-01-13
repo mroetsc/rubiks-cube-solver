@@ -1,10 +1,7 @@
 To execute main.py you have to specify one parameter: the trainingsmode (onec/20/judge_5) <br/>
-1st parameter is wether to turn on cmd only mode or GUI mode  
-2nd parameter is which platform you are using with Pi just enabeling solve.py  
-For example: "python main.py False Desktop" to start in GUI mode on Desktop   
 
 main.py:  
-contains the GUI and MainApplication to start training and getting the Network to solve the cube
+contains a console tool to start and stop the training
 
 neural_network.py:  
 contains the class declaration of the Neural Network
